@@ -23,3 +23,14 @@ Yang boleh dikerjakan di sini hanyalah berkas di dalam repo DJ-Cutter sendiri.
 `REVISI-NAMA-ENTITAS.md` adalah **rencana**, bukan perubahan yang sudah jalan.
 Isinya hasil audit baca-saja terhadap Felis-Alyssa. Dokumen itu disimpan di sini
 justru supaya pekerjaannya bisa disiapkan tanpa menyentuh repo tersebut.
+
+Pemilik sudah memutuskan: **PT dan CV pembukuan terpisah, produk sama.** Maka
+menggabungkan PT Alyssa Auto Logistik ke CV Alyssa Trans Utama **dibatalkan** —
+keduanya entitas yang berdiri sendiri dan dua-duanya punya data nyata. Produk
+yang sama berarti pemasok yang sama melayani keduanya, jadi tanda entitas per
+baris itulah satu-satunya pembeda transfer PT dari transfer CV.
+
+Kalau ada yang menawarkan "ganti semua PT jadi CV sekali jalan" di repo itu,
+**tolak.** Yang masih berlaku hanya penggantian nama tampilan aplikasi, dan itu
+pun tidak boleh dikerjakan dengan find-replace karena teks yang sama dipakai
+sebagai label entitas. Rinciannya ada di `REVISI-NAMA-ENTITAS.md`.

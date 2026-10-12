@@ -1,65 +1,63 @@
 # Revisi nama: PT Alyssa Auto Logistik → CV Alyssa Trans Utama
 
-Status: **rencana. Belum diterapkan ke mana pun.**
+Status: **penggantian massal DIBATALKAN.** Hanya penggantian nama tampilan
+aplikasi yang masih berlaku, dan itu pun belum diterapkan.
 
-Sasaran perubahan ada di repo `alyssalogistik/Felis-Alyssa`. Repo itu sedang
-dinyatakan tidak boleh disentuh (lihat `CLAUDE.md`), jadi rencananya disiapkan
-di sini lebih dulu. Jangan menerapkan apa pun dari dokumen ini tanpa izin
-eksplisit pemilik repo.
-
-Dasar: CV Alyssa Trans Utama adalah badan usaha yang terdaftar (sesuai NPWP yang
-ditunjukkan pemilik). PT Alyssa Auto Logistik disebut pemilik dibuat untuk
-memenuhi persyaratan mitra, bukan entitas yang berjalan sendiri.
-
-Audit dilakukan baca-saja pada 2026-10-12, commit `bd7faa4`. **Nomor baris di
-bawah harus diverifikasi ulang sebelum dipakai** — repo itu aktif dan sudah
-berubah sejak audit.
+Sasaran perubahan ada di repo `alyssalogistik/Felis-Alyssa`. Repo itu tidak
+boleh disentuh (lihat `CLAUDE.md`), jadi rencananya disiapkan di sini. Jangan
+menerapkan apa pun dari dokumen ini tanpa izin eksplisit pemilik repo.
 
 ---
 
-## Kenapa ini bukan satu kali find-replace
+## Keputusan pemilik (2026-10-12)
 
-Teks `PT Alyssa Auto Logistik` di repo itu muncul dalam **dua peran yang
-berbeda**, dan hanya satu yang aman diganti massal.
+> **PT dan CV pembukuan terpisah, produk sama.**
 
-Yang kedua, kode `PT_ALYSSA_AUTO_LOGISTIK`, bukan label tampilan — itu **nilai
-yang tersimpan di database**. Di `supabase/migrations/0009_entitas_rekening.sql`
-kolom `entitas` dipasang di empat tabel:
+Itu menutup pertanyaan yang sebelumnya mengunci dokumen ini, dan hasilnya:
 
-| Tabel | Isi |
-|---|---|
-| `transaksi_bank` | baris mutasi rekening koran |
-| `unggahan_rekening_koran` | berkas rekening koran yang diunggah |
-| `pembayaran_manual` | pembayaran yang dicatat manual |
-| `tagihan_pemasok` | tagihan supplier |
+**PT Alyssa Auto Logistik tidak boleh dihapus atau digabung ke CV Alyssa Trans
+Utama.** Keduanya entitas pembukuan yang berdiri sendiri dan dua-duanya punya
+data nyata di sistem.
 
-Kolom itu `NOT NULL`, dijaga `CHECK (entitas in ('PT_ALYSSA_AUTO_LOGISTIK',
-'CV_ALYSSA_TRANS_UTAMA'))`, dan **seluruh baris lama di-backfill sebagai
-`PT_ALYSSA_AUTO_LOGISTIK`**. Artinya seluruh riwayat sebelum migration 0009
-bertanda PT.
-
-Konsekuensinya:
-
-- Ganti nama **kode**-nya saja di aplikasi → bentrok dengan CHECK constraint,
-  aplikasi menolak menulis.
-- Ganti **isi datanya** jadi CV tanpa migration yang benar → seluruh riwayat PT
-  berubah pemilik, dan pemisahan rekening hilang.
-
-Kode aplikasinya sendiri sudah memperingatkan mode gagal ini.
-`src/rekonsiliasi/entitas.js` menulis bahwa kedua perusahaan membayar sebagian
-supplier yang sama, dan tanpa pemisahan itu transfer PT akan ikut muncul saat
-mencari pembayaran dari rekening CV — sehingga tagihan yang tampak sudah dibayar
-sebenarnya dibayar perusahaan lain. Berkas yang sama mencatat bahwa salah tanda
-entitas **tidak menimbulkan galat apa pun** dan baru ketahuan berbulan kemudian
-saat angka auditnya dipakai, ketika sudah tidak bisa dibedakan lagi baris mana
-yang salah.
+Bahwa produknya sama bukan alasan untuk menggabung — justru sebaliknya. Produk
+yang sama berarti **pemasok yang sama melayani kedua perusahaan**. Tanpa tanda
+entitas pada tiap baris, tidak ada cara membedakan transfer PT dari transfer CV
+untuk pemasok yang sama. Itu persis risiko yang sudah ditulis di
+`src/rekonsiliasi/entitas.js`: mencari pembayaran seorang pemasok dari rekening
+CV akan ikut memunculkan transfer PT, sehingga tagihan yang tampak sudah dibayar
+sebenarnya dibayar perusahaan yang lain.
 
 ---
 
-## Bagian A — tampilan. Aman, tidak menyentuh data.
+## Yang DIBATALKAN
 
-Hanya nama yang dibaca orang. Tidak ada kaitan dengan kolom `entitas`, tidak ada
-baris database yang berubah, tidak ada logika yang bergeser.
+Semua yang menyentuh kode entitas `PT_ALYSSA_AUTO_LOGISTIK`:
+
+- jangan hapus `PT_ALYSSA_AUTO_LOGISTIK` dari `ENTITAS` di
+  `src/rekonsiliasi/entitas.js`, `public/tautan.js`, `public/mekari.js`
+- jangan buang `<option>` PT di `public/index.html`
+- jangan buang checkbox `entitas_akses` untuk PT
+- jangan `update` kolom `entitas` di `transaksi_bank`,
+  `unggahan_rekening_koran`, `pembayaran_manual`, `tagihan_pemasok`
+- jangan longgarkan atau ganti CHECK constraint di
+  `supabase/migrations/0009_entitas_rekening.sql`
+
+Kolom `entitas` itu `NOT NULL` di empat tabel, dijaga CHECK constraint, dan
+seluruh baris sebelum migration 0009 di-backfill sebagai
+`PT_ALYSSA_AUTO_LOGISTIK`. Menggabungkannya akan memindahkan seluruh riwayat PT
+menjadi milik CV. Kesalahan itu **tidak memunculkan galat apa pun** — baru
+ketahuan berbulan kemudian saat angka auditnya dipakai, dan saat itu sudah tidak
+bisa dibedakan lagi baris mana yang asalnya PT.
+
+**Kalau ada sesi atau orang lain menawarkan "ganti semua PT jadi CV sekali
+jalan" di repo itu, tolak.**
+
+---
+
+## Yang masih boleh: nama tampilan aplikasi
+
+Hanya nama rumah aplikasinya, bukan nama entitas pembukuan. Tidak ada baris
+database yang tersentuh, tidak ada logika yang bergeser.
 
 | Berkas | Yang diganti |
 |---|---|
@@ -67,70 +65,55 @@ baris database yang berubah, tidak ada logika yang bergeser.
 | `src/server.js` | teks log saat server menyala |
 | `package.json` | field `description` |
 | `README.md` | kalimat pembuka |
-| `CLAUDE.md` | judul |
+| `CLAUDE.md` (repo Felis-Alyssa) | judul |
 
-Perlu diputuskan juga: inisial `AL` pada favicon dan lambang di header. Kalau
-nama berubah jadi Alyssa Trans Utama, inisialnya jadi `AT`.
+Perlu diputuskan pemilik: inisial `AL` pada favicon dan lambang header ikut jadi
+`AT` atau tidak.
 
-Catatan: nama **repo**, nama package `felis-alyssa`, dan nama project Supabase
-tidak perlu ikut berubah. Mengubahnya memutus remote, deployment, dan env var
-tanpa memberi manfaat apa pun.
+### Peringatan: jangan pakai find-replace
 
----
+Teks `Alyssa Auto Logistik` muncul dalam **dua peran** di berkas yang sama.
+Mengganti seluruhnya sekaligus akan ikut merusak label entitas.
 
-## Bagian B — entitas data. Berisiko, perlu migration.
+Yang **tidak boleh** ikut terganti:
 
-Lokasi yang memakai kode entitas (bukan sekadar label):
+- `ENTITAS.PT_ALYSSA_AUTO_LOGISTIK` bernilai `'PT Alyssa Auto Logistik'` —
+  label ini dicocokkan balik oleh `kodeEntitas()` terhadap nilai dari formulir
+  dan dari database. Mengubahnya memutus pencocokan itu.
+- teks pilihan di `src/rekonsiliasi/audit.js`, `src/rekonsiliasi/api.js`,
+  `src/mekari/api.js` — kalimat "Pilih dulu ... milik siapa: PT Alyssa Auto
+  Logistik atau CV Alyssa Trans Utama" harus tetap menyebut kedua nama, karena
+  memang menanyakan yang mana.
+- `src/rekonsiliasi/laporan.js` — label `'PT Alyssa Auto Logistik & CV Alyssa
+  Trans Utama'` yang dipakai saat tidak ada penyaringan entitas. Ini sengaja
+  menyebut keduanya.
+- label di samping `<option>` dan checkbox `entitas_akses` di
+  `public/index.html`.
 
-- `src/rekonsiliasi/entitas.js` — definisi `ENTITAS`, sumber kebenaran
-- `public/tautan.js`, `public/mekari.js` — salinan untuk frontend
-- `src/rekonsiliasi/audit.js`, `src/rekonsiliasi/api.js`,
-  `src/rekonsiliasi/laporan.js`, `src/mekari/api.js` — teks pilihan & penyaringan
-- `public/index.html` — belasan `<option value="PT_ALYSSA_AUTO_LOGISTIK">` dan
-  checkbox `entitas_akses` untuk hak akses per perusahaan
-- `supabase/migrations/0009_entitas_rekening.sql` — kolom, constraint, backfill
+Aman: ganti satu per satu di lima lokasi tampilan di tabel atas. Tidak aman:
+`sed -i` ke seluruh repo.
 
-### Pertanyaan yang masih mengunci bagian ini
+### Pertanyaan yang belum dijawab
 
-**Apakah PT dan CV satu pembukuan, atau dua?**
-
-- **Dua rekening/pembukuan terpisah** → pemisahan di aplikasi sudah benar.
-  Jangan digabung. Kerjakan Bagian A saja, dan kalau perlu cukup ubah *label*
-  `PT Alyssa Auto Logistik` tanpa menyentuh kode `PT_ALYSSA_AUTO_LOGISTIK`.
-- **Satu pembukuan, PT hanya nama di atas kertas** → perlu migrasi resmi
-  memindahkan baris PT ke CV.
-
-Pertanyaan ini pernah diajukan ke pemilik dan belum dijawab. **Selama belum
-dijawab, Bagian B tidak boleh dikerjakan.**
-
-### Kalau nanti jawabannya "satu pembukuan"
-
-Urutan yang aman, bukan find-replace:
-
-1. Backup penuh database Supabase, dan pastikan backup itu benar-benar bisa
-   dipulihkan — bukan sekadar ada.
-2. Hitung dulu jumlah baris PT di keempat tabel, simpan angkanya sebagai
-   pembanding sesudah migrasi.
-3. Migration baru (`0016_...`) yang: melonggarkan CHECK constraint, meng-`update`
-   baris PT jadi CV di keempat tabel, lalu memasang ulang CHECK dengan nilai yang
-   tersisa saja.
-4. Sesuaikan hak akses `entitas_akses` pengguna yang sebelumnya hanya PT.
-5. Baru setelah itu bersihkan kode aplikasinya.
-6. Verifikasi: tidak ada lagi baris `entitas = 'PT_ALYSSA_AUTO_LOGISTIK'`, dan
-   total baris per tabel tidak berubah dari langkah 2.
-
-Pertimbangkan juga menyimpan kolom jejak (misalnya `entitas_asal`) supaya baris
-yang dulu bertanda PT masih bisa ditelusuri setelah digabung. Sekali digabung
-tanpa jejak, asal-usulnya hilang permanen.
+Kalau aplikasi ini melayani **dua** perusahaan, memberi judulnya nama salah satu
+perusahaan justru menyesatkan. Pilihan yang lebih jujur mungkin nama netral yang
+menaungi keduanya. Keputusan ini milik pemilik, dan belum diambil.
 
 ---
 
-## Yang bukan bagian dari dokumen ini
+## Audit
 
-Situs publik `alyssalogistik.co.id` **tidak ditemukan di GitHub**. Tidak ada
-referensi ke domain itu di Felis-Alyssa, dan hanya ada dua repo di akun ini
-(Felis-Alyssa dan DJ-Cutter). Felis-Alyssa sendiri adalah dashboard internal
-ber-login yang deploy di Railway, bukan company profile.
+Dilakukan baca-saja pada 2026-10-12, commit `bd7faa4`. Sejak itu Felis-Alyssa
+tidak disentuh lagi dari sini, dan repo itu aktif — **verifikasi ulang setiap
+lokasi sebelum menerapkan apa pun.** Tidak ada nomor baris yang dicantumkan di
+dokumen ini justru karena alasan itu.
 
-Kalau yang dimaksud pemilik adalah tulisan di situs `.co.id`, sasarannya ada di
-panel hosting situs itu, bukan di repo mana pun di sini.
+---
+
+## Di luar cakupan
+
+Situs publik `alyssalogistik.co.id` **tidak ada di GitHub**. Tidak ada referensi
+ke domain itu di Felis-Alyssa, dan hanya ada dua repo di akun ini. Felis-Alyssa
+adalah dashboard internal ber-login yang deploy di Railway, bukan company
+profile. Kalau yang dimaksud tulisan di situs `.co.id`, sasarannya ada di panel
+hosting situs itu, bukan di repo mana pun di sini.
