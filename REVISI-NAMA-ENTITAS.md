@@ -93,6 +93,30 @@ Yang **tidak boleh** ikut terganti:
 Aman: ganti satu per satu di lima lokasi tampilan di tabel atas. Tidak aman:
 `sed -i` ke seluruh repo.
 
+### Buat supaya gampang dibalik
+
+Kalau penggantian nama tampilan ini dikerjakan, kerjakan sebagai **satu commit
+yang hanya berisi itu** — jangan dicampur perubahan lain. Dengan begitu
+mengembalikannya cukup `git revert <commit>`, tanpa menyentuh apa pun yang lain
+dan tanpa menebak-nebak berkas mana yang harus dikembalikan.
+
+### Catatan: nama tampilan bukan alat verifikasi mitra
+
+Aplikasi ini internal dan ber-login. Gerbang masuk menutup seluruh layar sampai
+sesinya sah, dan server menolak setiap endpoint tanpa sesi. **Mitra luar tidak
+bisa melihatnya**, jadi judul di sini tidak memenuhi persyaratan verifikasi
+pihak mana pun.
+
+Dan karena PT dan CV pembukuannya terpisah, keduanya pihak hukum yang berbeda —
+bukan dua nama untuk satu usaha. Entitas yang diajukan dan disetujui mitra harus
+sama dengan entitas yang benar-benar menjalankan pekerjaannya dan menanggung
+risikonya. Kalau tidak sama, polis dan kontrak menunjuk entitas yang satu
+sementara yang beroperasi entitas yang lain, dan itu baru ketahuan saat ada
+klaim atau sengketa.
+
+Jadi: ganti nama tampilan kalau memang itu nama rumah yang dikehendaki. Jangan
+dipakai sebagai pengganti pengajuan dengan badan usaha yang benar.
+
 ### Pertanyaan yang belum dijawab
 
 Kalau aplikasi ini melayani **dua** perusahaan, memberi judulnya nama salah satu
