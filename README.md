@@ -1,103 +1,100 @@
 # DJ-Cutter
 
-Musical handover cleanup for a folder of numbered DJ-set MP3s.
+Dua perkakas untuk menyiapkan kumpulan lagu DJ. Keduanya membaca folder sumber
+**read-only** dan menulis ke folder baru.
 
-For every consecutive pair of tracks it trims the OUTRO of track N and the PLAY
-(head) of track N+1 so the handover lands on the bar grid: one kick at the seam,
-no beat jump, no clipped attack, no dead air. Tracks stay individual files.
+| Perkakas | Fungsi |
+|---|---|
+| `dj_cutter.py` | Merapikan sambungan OUTRO → PLAY antar track pada bar grid |
+| `funkot_analyze.py` + `funkot_restore.py` | Restorasi & cleanup audio per lagu |
 
-**The source folder is opened read-only and is never written to, renamed, or
-deleted.**
+Keduanya butuh FFmpeg di PATH (`winget install Gyan.FFmpeg` di Windows) dan:
 
-## What it does and does not do
-
-Applied:
-
-- sample-accurate cut on the fitted 4/4 bar grid, at both ends of every track
-- anti-click micro-fades (3 ms in, 10 ms out) -- not musical crossfades
-- bitrate, sample rate, channel layout, ID3 tags and cover art carried over
-
-Deliberately not applied: EQ, normalization, gain changes, noise reduction,
-stem separation, time-stretch, and joining tracks into one file.
-
-## Ordering
-
-Tracks are ordered by the **number in the filename**, never by directory order:
-`01, 2, 03, 10` sorts as 1, 2, 3, 10 even though Explorer may show
-`01, 03, 10, 2`. A file with no number in its name is a hard error rather than a
-guess, and so is a duplicate number.
-
-## Running it on Windows
-
-Double-click **`Run Ffonkot 003.bat`**. It checks the prerequisites, installs the
-Python packages on first run, processes the folder and opens the result in
-Explorer.
-
-Prerequisites, once:
-
-```
-winget install Gyan.FFmpeg
+```bash
+pip install -r requirements.txt
 ```
 
-plus Python 3.9+ from python.org with "Add python.exe to PATH" ticked.
+---
 
-To point it at a different folder, edit the `SRC` and `DST` lines at the top of
-the .bat, or call the script directly:
+# 1. Restorasi audio (funkot)
 
+```bash
+python funkot_analyze.py "Funkot 001" -o analisis.json
+python funkot_restore.py "Funkot 001" "Funkot 001 CLEAN" -j analisis.json
 ```
-python dj_cutter.py "C:\path\to\source" "C:\path\to\output"
-python dj_cutter.py "C:\path\to\source" "C:\path\to\output" --dry-run
+
+Opsi: `--lufs -9` · `--denoise-db 24` · `--no-denoise` · `--mono-bass` · `--flac`
+
+Tiap filter dinyalakan oleh sebuah **hasil ukur**, bukan dipasang jaga-jaga, dan
+`_LOG_PROSES.txt` mencatat alasan tiap keputusan. Yang tidak diubah: tempo,
+pitch, key, groove — tidak ada filter dalam rantai ini yang melakukan
+time-stretch atau resample materi musiknya.
+
+Rantai: buang DC → notch dengung → declick → declip → denoise → EQ bedah →
+loudness 2 lintasan → ceiling true-peak.
+
+**Kompresor sengaja tidak dipakai.** Funkot umumnya sudah sangat padat di
+sumbernya (crest < 8 dB); menambah kompresi di materi seperti itu menghasilkan
+pumping, bukan punch.
+
+### Sudah divalidasi
+
+Diuji pada materi sintetis 128 kbps yang kerusakannya diketahui persis.
+
+| Hal | Hasil |
+|---|---|
+| Batas pita MP3 | terdeteksi 16.9 kHz pada sumber 128 kbps |
+| Dengung 50 Hz | +18.2 → +6.8 dB setelah notch; urutan antar lagu benar |
+| Clipping | 0.402 / 0.241 / 0.073 % → 0.000 % |
+| True peak | +1.2…+2.4 → semua ≤ −1.00 dBTP |
+| DC offset | 0.0132 → 0.0003 |
+| Sebaran loudness | 4.1 dB → 0.8 dB antar lagu |
+| Durasi | tidak berubah — tempo/pitch utuh |
+| Denoise | nr=12 → 4.0 dB · nr=18 → 7.1 dB · nr=24 → 8.8 dB lebih bersih |
+| Sumber | checksum identik setelah diproses |
+
+### Batasnya, supaya jujur
+
+- **Indeks klik bersifat indikatif.** Terhadap posisi klik yang diketahui pada
+  materi 128 kbps: urutan antar lagu benar dan nyaris tanpa false positive,
+  tetapi hanya menemukan sekitar separuh klik — encoder lossy menghapus jejak
+  impuls satu-sampel. Cukup untuk memutuskan perlu declick atau tidak.
+- **Artefak "musical noise" tidak terukur** oleh pengukuran pita. Sampai di mana
+  denoise boleh didorong adalah penilaian telinga, bukan angka.
+- **Pita di atas batas LPF tidak bisa dikembalikan.** Kalau sumbernya 128 kbps,
+  tidak ada "air" di atas ~16.9 kHz untuk diangkat. Skrip menolak memasang
+  shelf treble di kasus itu dan mengatakan alasannya.
+- Normalisasi lagu yang lebih dinamis ke target bisa memangkas crest beberapa
+  dB. Log mencatat angkanya; kalau terlalu banyak, naikkan `--lufs`.
+
+---
+
+# 2. Sambungan OUTRO → PLAY
+
+```bash
+python dj_cutter.py "C:\path\sumber" "C:\path\hasil"
+python dj_cutter.py "C:\path\sumber" "C:\path\hasil" --dry-run
 ```
 
-`--dry-run` reports every cut point and the QC verdict without writing anything.
+Di Windows bisa juga klik dua kali `Run Ffonkot 003.bat` (path sudah terisi).
 
-## Output
+Memotong ekor tiap track dan kepala track berikutnya supaya serah terimanya
+jatuh di bar grid 4/4: satu kick di sambungan, beat tidak lompat, attack tidak
+terpotong, tidak ada dead air. Track tetap file terpisah.
 
-The output folder receives one MP3 per source track under the original filename,
-plus `_QC_REPORT.txt`: per-track BPM and cut points, and per-handover seam kick
-spacing, double-kick verdict, beat-jump verdict, dead air and BPM drift. Seams
-that need an ear are marked `FLAG`.
+Urutan diambil dari **nomor pada nama berkas**, bukan urutan folder: `01, 2, 03,
+10` diproses 1, 2, 3, 10 walau Explorer menampilkannya `01, 03, 10, 2`. Nomor
+yang hilang atau ganda adalah error, bukan tebakan.
 
-## How the grid is found
+Hasilnya menulis `_QC_REPORT.txt`: jarak kick di tiap sambungan, vonis double
+kick dan beat jump, dead air, dan selisih BPM. Sambungan yang perlu didengar
+ditandai `FLAG`.
 
-DJ-set tracks are steady 4/4, so rather than trusting a frame-level beat tracker
-the analysis fits one global grid `t_k = phi + k * period` to the kick-band onset
-flux. Evaluating that envelope's Fourier coefficient at each candidate period
-yields both the strength of the periodicity and the grid phase in a single pass,
-and the resulting grid does not drift across the track the way a chained
-median-of-intervals estimate does.
+Grid-nya satu fit global `t_k = phi + k*period` terhadap flux onset pita kick,
+lewat koefisien Fourier envelope pada tiap kandidat periode — tidak melenceng
+sepanjang lagu seperti estimasi median-of-intervals berantai.
 
-Three details matter and each was a bug first:
-
-- the flux is built from the STFT over 30-130 Hz, not from a mel basis capped at
-  that band, which leaves most filters empty and makes the envelope retrigger
-  several times per kick;
-- it is kick-band rather than broadband, because offbeat hats otherwise
-  contribute as much as kicks and pull the fitted phase half a beat off;
-- the bar phase is taken from one beat array for the whole track. Fitting the
-  phase separately at each edge produced two arrays whose indices did not line
-  up, so a single bar-offset index meant a different bar at each end and the
-  tail landed exactly one beat out.
-
-Cutting *at* a bar line means that bar line's kick is not included, so the kick
-heard at the seam is supplied by the next track alone -- that is what prevents
-the double kick. The cut only snaps to a transient when one is actually there;
-otherwise it stays on the computed bar line instead of locking onto the loudest
-frame of a decay tail.
-
-## Tuning
-
-Every threshold is a field of the `Params` dataclass at the top of
-`dj_cutter.py` -- grid snap tolerance, attack guard, fade lengths, silence floor,
-double-kick and beat-jump ratios, the tempo search range.
-
-## Verification
-
-Validated against synthetic 4/4 material with known kick positions: tempo
-recovered exactly (128.000 / 128.000 / 129.000 / 128.000 BPM against a 128 /
-128 / 129 / 128 truth), kicks detected 64/64 per track with no misses and no
-false positives, tail cuts landing on the bar line within 5 ms and head cuts
-19-22 ms early by design to keep the attack whole. Concatenating the outputs and
-measuring the seams with an independently written detector gives seam intervals
-of 1.03-1.04 beats at every handover, no dead air, and source checksums
-unchanged after repeated runs.
+Divalidasi pada materi 4/4 sintetis dengan posisi kick diketahui: tempo persis,
+64/64 kick terdeteksi tanpa false positive, potongan ekor mendarat di bar line
+dalam 5 ms, dan sambungan berjarak 1.03–1.04 beat diukur pada hasil gabungan
+memakai detektor yang ditulis terpisah.
