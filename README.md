@@ -69,7 +69,51 @@ Diuji pada materi sintetis 128 kbps yang kerusakannya diketahui persis.
 
 ---
 
-# 2. Sambungan OUTRO → PLAY
+# 2. Memecah DJ set jadi track (`dj_split.py`)
+
+```bash
+python dj_split.py "MIX.mp3" -o kandidat.json
+```
+
+**Deteksi saja — tidak pernah memotong.** Keluarannya daftar kandidat titik
+potong beserta keyakinannya, untuk diperiksa dan disetujui dulu. Di DJ set dua
+lagu sering tumpang tindih 30–60 detik, jadi batasnya penilaian, bukan fakta.
+
+Caranya: fitur beat-synchronous (MFCC + chroma) → self-similarity matrix →
+novelty Foote, lalu tiap kandidat diuji empat hal — jarak timbre, jarak
+harmoni, pergeseran BPM, dan **apakah materi kembali** sesudahnya. Yang terakhir
+itu pembeda breakdown dari ganti lagu: sesudah breakdown musik balik ke lagu
+yang sama, sesudah ganti lagu tidak. Titik akhirnya di-snap ke bar line.
+
+### Hasil ukur pada dua mix uji yang batasnya diketahui persis
+
+| | Mix 1 (tanpa breakdown) | Mix 2 (ada breakdown di dalam lagu) |
+|---|---|---|
+| Ganti lagu ditemukan | **4 / 4** | **3 / 3** |
+| False positive | 0 | 3 (semuanya breakdown) |
+| Error waktu | ≤ 6,9 s, **semua di dalam crossfade** | ≤ 6,6 s |
+| Rentang keyakinan (benar) | 0,65 – 0,92 | 0,44 – 0,82 |
+| Rentang keyakinan (palsu) | — | 0,27 – 0,65 |
+
+**Recall 7/7, presisi 7/10.**
+
+### Batasnya, supaya jujur
+
+- **Keyakinan tidak memisahkan bersih.** Di Mix 2 satu ganti lagu asli (0,44)
+  skornya di bawah dua breakdown (0,65 dan 0,57). Angka itu bahan pertimbangan,
+  bukan vonis — persis sebabnya perkakas ini tidak memotong sendiri.
+- Dua pendekatan dicoba dan **terukur gagal** sebelum yang sekarang: menekan
+  peak dengan jarak minimum panjang lagu membuat breakdown membunuh batas asli
+  59 detik di sebelahnya, dan membandingkan rata-rata MFCC mentah tidak punya
+  daya pisah sama sekali (semua kandidat 0,96–1,00) karena bentuk spektrum
+  rata-rata lagu dance 4/4 mana pun serupa.
+- Grid bar di-fit sekali untuk seluruh mix. Kalau BPM bergeser jauh sepanjang
+  set, snap bar di ujung bisa meleset.
+- Waktu proses ±55 detik untuk mix 11 menit.
+
+---
+
+# 3. Sambungan OUTRO → PLAY
 
 ```bash
 python dj_cutter.py "C:\path\sumber" "C:\path\hasil"
