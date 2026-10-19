@@ -506,15 +506,39 @@ def refine_to_attack(a: Analysis, t: float) -> float:
 
 
 def head_cut_time(a: Analysis) -> float:
-    """Where track N+1's PLAY begins: first downbeat at/after the audible start."""
+    """Where the PLAY begins: the first downbeat at or after the audible start,
+    stepped back whole bars if that downbeat would fall past the opening kick.
+
+    The guard earns its place. Without it the bar phase occasionally lands a
+    beat late and the track opens on its SECOND kick -- measured at 460 ms past
+    the first kick on one track of an eighteen-track set.
+
+    The guard is deliberately narrow. Anchoring the head on the first detected
+    kick instead was tried and measured worse across the same set: a weak event
+    during a fade-in reads as the first kick, so the head stops being trimmed at
+    all, and the lead silence survives. That cost nine of eighteen tracks their
+    trim and raised flagged seams from one to eight. Hence: keep the downbeat,
+    and only step back when a kick that is genuinely strong sits before it.
+    """
     import numpy as np
 
     db = np.asarray(a.downbeats, dtype=float)
     tol = P.grid_snap_tolerance_ms / 1000.0
-    cand = db[db >= a.audible_start - tol]
+    cand = db[db >= a.audible_start - tol] if db.size else np.array([])
     if not cand.size:
         return a.audible_start
-    return refine_to_attack(a, float(cand[0]))
+    h = float(cand[0])
+
+    kicks = kick_times(a.mono, a.sr)
+    if len(kicks) and a.kick_strength > 0:
+        sr, hop, env = a.sr, a.kick_hop, a.kick_env
+        idx = np.clip((kicks * sr / hop).astype(int), 0, len(env) - 1)
+        strong = kicks[env[idx] >= 0.5 * a.kick_strength]
+        strong = strong[strong >= a.audible_start - tol]
+        if strong.size and h > float(strong[0]) + tol:
+            while h > float(strong[0]) + tol and h - a.bar_period >= 0.0:
+                h -= a.bar_period
+    return refine_to_attack(a, max(0.0, h))
 
 
 def tail_cut_time(a: Analysis) -> tuple[float, float]:

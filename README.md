@@ -69,7 +69,54 @@ Diuji pada materi sintetis 128 kbps yang kerusakannya diketahui persis.
 
 ---
 
-# 2. Mencocokkan karakter ke lagu acuan (`funkot_match.py`)
+# 2. Satu perintah untuk seluruh folder (`dj_final.py`)
+
+```bash
+python dj_final.py --ref "CLASSIC_4_FINAL_V4.mp3" "DJ CUTTER" "DJ_CUTTER_FINAL_V1"
+```
+
+Merangkai dua tahap yang sudah diuji terpisah — pencocokan pita dari
+`funkot_match.py` dan grid bar + QC sambungan dari `dj_cutter.py` — lalu
+menulis satu MP3 per lagu plus satu `_QC_REPORT.txt`.
+
+Satu hal yang hanya ada di sini dan penting: **seluruh tahap dikerjakan pada WAV
+float, MP3 di-encode sekali di akhir.** Menjalankan dua perkakas berurutan
+menghasilkan dua generasi MP3 dan kerugian kualitas yang sia-sia.
+
+Penjaga durasi: pemangkasan awal atau akhir yang melebihi 2 bar **ditolak dan
+dilaporkan**, tidak dikerjakan diam-diam.
+
+### Hasil ukur pada 18 berkas uji
+
+| | |
+|---|---|
+| Berkas masuk → keluar | **18 → 18** |
+| Kick pertama tepat di awal | **17 / 18** |
+| Sambungan bersih | 16 / 17 |
+| Durasi | hanya hening awal/akhir yang dipangkas, 0,6–1,8 s |
+| Checksum sumber | 18 / 18 identik |
+| Waktu proses | ±90 detik |
+
+Satu sambungan di-flag karena beat lompat, dan memang benar: kedua lagu beda
+BPM 1,59 %. Tanpa time-stretch itu tidak bisa diselesaikan, dan perkakas ini
+melaporkannya alih-alih diam-diam menambal.
+
+### Catatan: satu perbaikan sempat membuat keadaan lebih buruk
+
+Pada set 18 lagu itu, satu lagu kehilangan kick pertamanya — fase bar jatuh
+satu beat terlambat dan lagunya dibuka pada kick KEDUA, 460 ms lewat. Perbaikan
+pertama mengganti jangkar head cut dari downbeat ke kick pertama hasil deteksi,
+dan hasilnya **lebih buruk**: event lemah selama fade-in terbaca sebagai kick
+pertama, sehingga hening awal tidak pernah dipangkas. Kick tepat di awal turun
+dari 16/18 jadi 9/18, dan sambungan ter-flag naik dari 1 jadi 8.
+
+Yang dipakai sekarang penjaga sempit: tetap pakai downbeat, dan mundur satu bar
+**hanya** kalau ada kick yang benar-benar kuat sebelumnya. Hasilnya 17/18.
+Keduanya dicatat di kode supaya tidak diulang.
+
+---
+
+# 3. Mencocokkan karakter ke lagu acuan (`funkot_match.py`)
 
 ```bash
 python funkot_match.py --ref "CLASSIC_4_FINAL_V4.mp3" "DJ CUTTER" "DJ_CUTTER_FINAL_V1"
@@ -113,7 +160,7 @@ disuntikkan. Indeksnya tetap dilaporkan untuk perbandingan antar lagu, dan
 
 ---
 
-# 3. Memecah DJ set jadi track (`dj_split.py`)
+# 4. Memecah DJ set jadi track (`dj_split.py`)
 
 ```bash
 python dj_split.py "MIX.mp3" -o kandidat.json
@@ -157,7 +204,7 @@ yang sama, sesudah ganti lagu tidak. Titik akhirnya di-snap ke bar line.
 
 ---
 
-# 4. Sambungan OUTRO → PLAY
+# 5. Sambungan OUTRO → PLAY
 
 ```bash
 python dj_cutter.py "C:\path\sumber" "C:\path\hasil"
