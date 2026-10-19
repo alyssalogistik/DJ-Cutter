@@ -69,7 +69,51 @@ Diuji pada materi sintetis 128 kbps yang kerusakannya diketahui persis.
 
 ---
 
-# 2. Memecah DJ set jadi track (`dj_split.py`)
+# 2. Mencocokkan karakter ke lagu acuan (`funkot_match.py`)
+
+```bash
+python funkot_match.py --ref "CLASSIC_4_FINAL_V4.mp3" "DJ CUTTER" "DJ_CUTTER_FINAL_V1"
+```
+
+Acuan **diukur, bukan ditebak**: keseimbangan spektrum jangka panjang lagu acuan
+diambil per pita (dinormalkan ke total energi supaya beda loudness tidak bocor
+jadi beda warna), lalu tiap target dikoreksi menuju angka itu.
+
+Aturan karakter tertanam di tabel pita: badan kick (70 Hz) dan kehangatan
+(140 Hz) boleh diangkat sampai +2,5 dB tapi pelit dipotong, sementara pita
+tajam (3,8 kHz) **tidak pernah diangkat sama sekali**. Koreksi dibatasi 2–3 dB
+per pita, dan pita yang selisihnya di bawah 0,8 dB tidak disentuh.
+
+Tidak memakai compressor, limiter, atau loudness normalization. Kalau true peak
+melewati −1 dBTP sesudah EQ, yang dipasang hanya trim gain datar — dinamika
+tidak disentuh. Durasi tidak pernah dipotong.
+
+### Hasil ukur pada acuan + tiga target yang karakternya diketahui
+
+| Target | Jarak ke acuan sebelum | sesudah | Durasi |
+|---|---|---|---|
+| Tajam & tipis | 5,76 dB | 4,27 dB | utuh |
+| Boomy & tumpul | 1,97 dB | **0,74 dB** | utuh |
+| Kontrol (identik acuan) | 0,00 dB | **0,02 dB** | utuh |
+
+Kontrol itu ujian terpentingnya: lagu yang sudah benar **tidak di-EQ sama
+sekali** dan keluar nyaris identik. Target "tajam & tipis" sengaja hanya
+diperbaiki sebagian — selisihnya sampai −12,5 dB di satu pita sementara batas
+koreksi 3 dB. Perkakas ini memilih kurang mengoreksi daripada melakukan operasi
+besar pada musiknya.
+
+### `adeclick` mati secara default — ini keputusan hasil ukur
+
+Pada materi yang sudah bersih, memasang `adeclick` menggeser keseimbangan pita
+**1,43 dB**, sementara re-encode MP3 murni hanya **0,018 dB**. Filter itu tidak
+gratis. Dan indeks klik tidak cukup andal untuk jadi ambang otomatis: pada
+materi 320 kbps dengan hi-hat dan clap tajam ia membaca 28/menit walau nol klik
+disuntikkan. Indeksnya tetap dilaporkan untuk perbandingan antar lagu, dan
+`--declick` tersedia kalau telinga memang mendengar crackle.
+
+---
+
+# 3. Memecah DJ set jadi track (`dj_split.py`)
 
 ```bash
 python dj_split.py "MIX.mp3" -o kandidat.json
@@ -113,7 +157,7 @@ yang sama, sesudah ganti lagu tidak. Titik akhirnya di-snap ke bar line.
 
 ---
 
-# 3. Sambungan OUTRO → PLAY
+# 4. Sambungan OUTRO → PLAY
 
 ```bash
 python dj_cutter.py "C:\path\sumber" "C:\path\hasil"
